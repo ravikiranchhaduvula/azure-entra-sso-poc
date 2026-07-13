@@ -1,0 +1,41 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Dashboard</title>
+
+    <link rel="stylesheet"
+          href="{% static 'css/styles.css' %}">
+
+</head>
+
+<body>
+
+<div class="login-card">
+
+    <h2>Dashboard</h2>
+
+    <div id="userInfo">
+
+        Loading...
+
+    </div>
+
+    <br>
+
+    <button onclick="logout()">
+
+        Logout
+
+    </button>
+
+</div>
+
+<script src="{% static 'js/app.js' %}"></script>
+
+</body>
+
+</html>
