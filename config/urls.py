@@ -6,5 +6,5 @@ urlpatterns = [
     # Frontend pages
     path("", include("frontend.urls")),
     # Backend APIs
-    path("", include("accounts.urls")),
+    path("api/", include("accounts.urls")),
 ]
