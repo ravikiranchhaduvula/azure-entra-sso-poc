@@ -4,7 +4,7 @@ async function login() {
 
     const password = document.getElementById("password").value;
 
-    const response = await fetch("/login/", {
+    const response = await fetch("/api/login/", {
 
         method: "POST",
 
@@ -47,7 +47,7 @@ async function verifyOtp() {
         document.getElementById("otp").value;
 
     const response =
-        await fetch("/verify-otp/", {
+        await fetch("/api/verify-otp/", {
 
             method: "POST",
 
@@ -103,7 +103,7 @@ async function loadDashboard() {
 
     }
 
-    const response = await fetch("/dashboard/", {
+    const response = await fetch("/api/dashboard/", {
 
         method: "GET",
 

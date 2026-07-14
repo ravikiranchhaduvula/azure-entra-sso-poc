@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+.venv/
+venv/
+
+# Git
+.git/
+.gitignore
+
+# VS Code
+.vscode/
+
+# JetBrains
+.idea/
+
+# Python cache
+.pytest_cache/
+
+# SQLite (optional)
+db.sqlite3
+
+# Documentation
+docs/
+
+# Environment variables
+.env
+
+# OS files
+.DS_Store
+Thumbs.db

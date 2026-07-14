@@ -26,8 +26,11 @@ SECRET_KEY = 'django-insecure-*jgm1jvc31jmuqjbr5=)a@!+wr-b!!eefv!4tk1s43z4j5no7w
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "localhost",
+    "capeark-auth-ravi-2026.azurewebsites.net",
+]
 
 # Application definition
 
