@@ -1,0 +1,382 @@
+PS C:\capeark-sso-local> .venv\Scripts\Activate.ps1
+
+(.venv) PS C:\capeark-sso-local> python -m pip freeze
+asgiref==3.11.1
+certifi==2026.6.17
+charset-normalizer==3.4.9
+Django==6.0.6
+djangorestframework==3.17.1
+djangorestframework_simplejwt==5.5.1
+idna==3.18
+PyJWT==2.13.0
+requests==2.34.2
+sqlparse==0.5.5
+tzdata==2026.2
+urllib3==2.7.0   --> The Docker build needs to know exactly which packages to install.
+
+(.venv) PS C:\capeark-sso-local> python -m pip freeze > requirements.txt
+
+(.venv) PS C:\capeark-sso-local> type requirements.txt
+asgiref==3.11.1
+certifi==2026.6.17
+charset-normalizer==3.4.9
+Django==6.0.6
+djangorestframework==3.17.1
+djangorestframework_simplejwt==5.5.1
+idna==3.18
+PyJWT==2.13.0
+requests==2.34.2
+sqlparse==0.5.5
+tzdata==2026.2
+urllib3==2.7.0
+
+Phase 6.1 – Step 2: Create the Dockerfile
+
+File with name Dockerfile
+
+Commit 1
+Docker + Django runserver
+Commit 2
+Gunicorn production server
+
+Much easier to troubleshoot.
+
+Phase 6.1 – Step 3: Create .dockerignore
+
+which creates a fresh SQLite database inside the container.
+
+That's cleaner than copying your development database.
+
+Phase 6.1 – Step 4 — Build the Image
+
+docker build -t capeark-sso .
+
+Phase 6.1 – Step 5 — Check Image actually runs
+
+docker run --rm -p 8000:8000 capeark-sso
+
+docker build -t capeark-sso .
+
+docker ps
+
+docker stop <container_id>
+
+docker run --rm -p 8000:8000 capeark-sso
+
+docker ps
+
+docker exec -it c5aa2ef20882 python manage.py shell
+
+from accounts.models import AppUser
+
+AppUser.objects.all()
+
+<QuerySet []>
+
+python manage.py createsuperuser (or)
+
+from accounts.models import AppUser
+
+AppUser.objects.create_user(
+    username="ravik",
+    email="ravi@example.com",
+    password="Password123!"
+)
+
+accounts/
+    management/
+        __init__.py
+        commands/
+            __init__.py
+            seed_demo_user.py
+
+
+✅ requirements.txt
+
+✅ Dockerfile
+
+✅ .dockerignore
+
+✅ Docker Image
+
+✅ Docker Run
+
+✅ Automatic Migrations
+
+✅ Automatic Demo User Creation
+
+✅ Environment Variable Support
+
+============================================================
+Phase 6.2 Roadmap
+
+Step 1  Azure Resource Group
+        ✅
+
+Step 2  App Service Plan
+        ⏳
+
+Step 3  Linux Web App
+        ⏳
+
+Step 4  Configure App Settings
+        ⏳
+
+Step 5  Deploy Docker Image
+        ⏳
+
+Step 6  Verify Login Page
+        ⏳
+
+Step 7  Verify OTP Flow
+        ⏳
+
+Step 8  Verify Dashboard
+        ⏳
+		
+=================================================================
+Azure Login and select subscription
+
+az login --use-device-code
+
+az account show
+
+az group create --name capeark-auth-rg --location australiaeast
+
+az group show --name capeark-auth-rg --output table
+
+az group create --name customer-portal-rg --location australiaeast
+
+az group show --name customer-portal-rg --output table
+
+The App Service Plan is the computing capacity (provides CPU, memory and Linux hosting)
+
+az appservice plan create --name capeark-auth-plan --resource-group capeark-auth-rg --is-linux --sku B1
+
+az appservice plan show --name capeark-auth-plan --resource-group capeark-auth-rg --output table
+
+ACR is a private Docker image warehouse. --> <YOUR_ACR_NAME>
+
+az acr create --resource-group capeark-auth-rg --name capearkauthacr2026 --sku Basic
+
+az acr login --name capearkauthacr2026
+
+docker tag capeark-sso capearkauthacr2026.azurecr.io/<YOUR_ACR_NAME>
+
+docker push capearkauthacr2026.azurecr.io/<YOUR_ACR_NAME>
+
+az acr repository list --name capearkauthacr2026 --output table
+
+Create Linux Webapp (The Web App is the actual Azure application resource that:
+                     Pulls the Docker image from ACR.
+                     Starts a container from that image.
+                     Keeps it running.
+                     Restarts it if it crashes.
+                     Provides the public HTTPS address.
+                     Handles incoming web traffic.) -- <YOUR_WEBAPP_NAME>
+
+az webapp create --resource-group capeark-auth-rg --plan capeark-auth-plan --name <YOUR_WEBAPP_NAME> --deployment-container-image-name capearkauthacr2026.azurecr.io/<YOUR_ACR_NAME>
+
+Then connect the Web App to ACR
+
+1).Give the Web App an identity
+   (Web App Managed Identity → AcrPull role → ACR) --> Webapp managed identity has AcrPull permission
+
+az webapp identity assign --resource-group capeark-auth-rg --name <YOUR_WEBAPP_NAME>
+
+{
+  "principalId": <WEBAPP_MANAGED_IDENTITY_PRINCIPAL_ID>,
+  "tenantId": <YOUR_TENANT_ID>,
+  "type": "SystemAssigned",
+  "userAssignedIdentities": null
+}
+
+2).Give the Web App permission to pull from ACR
+
+az role assignment create --assignee-object-id %PRINCIPAL_ID% --assignee-principal-type ServicePrincipal --role AcrPull --scope %ACR_ID%
+
+a). Get and store the Web App identity
+	
+	for /f "delims=" %i in ('az webapp identity show --resource-group capeark-auth-rg --name <YOUR_WEBAPP_NAME> --query principalId --output tsv') do set PRINCIPAL_ID=%i
+	
+b).	and verify
+	
+	echo %PRINCIPAL_ID%
+	
+c). Get and store the ACR resource ID
+	
+	for /f "delims=" %i in ('az acr show --name capearkauthacr2026 --query id --output tsv') do set ACR_ID=%i
+	
+d). and verify
+
+    echo %ACR_ID%
+	
+e). Assign AcrPull
+
+    az role assignment create --assignee-object-id %PRINCIPAL_ID% --assignee-principal-type ServicePrincipal --role AcrPull --scope %ACR_ID%
+	
+<YOUR_WEBAPP_NAME>
+        │
+        │ Managed Identity
+        ▼
+AcrPull permission
+        │
+        ▼
+capearkauthacr2026
+
+3).Tell the Web App to use Managed Identity for ACR
+(Without it, the Web App may still look for an ACR username and password even though we assigned the AcrPull role. 
+ Azure App Service supports using acrUseManagedIdentityCreds for private ACR image pulls.)
+
+az webapp config set --resource-group capeark-auth-rg --name <YOUR_WEBAPP_NAME> --generic-configurations "{\"acrUseManagedIdentityCreds\": true}"
+
+4).Step 4 — Connect the Web App to the Docker image
+
+az webapp config container set --resource-group capeark-auth-rg --name <YOUR_WEBAPP_NAME> --container-image-name capearkauthacr2026.azurecr.io/<YOUR_ACR_NAME> --container-registry-url https://capearkauthacr2026.azurecr.io
+
+Verify Step 4
+
+az webapp config container show --resource-group capeark-auth-rg --name <YOUR_WEBAPP_NAME>
+
+Web App container configuration
+   └── points to capeark-sso:v1
+   
+set Django’s container port
+
+(--Django runs inside the Docker container.
+ --0.0.0.0:8000 means Django listens on port 8000 and accepts connections from outside the container.
+ --127.0.0.1:8000 would accept connections only from inside the same container.
+ --Azure App Service receives requests from the internet.
+ --Azure must forward those requests to the port where Django is listening.
+ --WEBSITES_PORT=8000 tells Azure to send traffic to container port 8000.
+ --Therefore, Django’s port and Azure’s configured port must match.
+ --Flow: Internet → Azure Web App → port 8000 → Django.
+ --0.0.0.0 controls network accessibility; 8000 is the application port.
+ --Without the correct host and port, the container may run but the website may not open.)
+
+az webapp config appsettings set --resource-group capeark-auth-rg --name capeark-auth-ravi-2026 --settings WEBSITES_PORT=8000
+
+5).Restart Webapp
+
+az webapp restart --resource-group capeark-auth-rg --name capeark-auth-ravi-2026
+
+Verify it app is running or not
+
+az webapp show --resource-group capeark-auth-rg --name capeark-auth-ravi-2026 --query state --output tsv
+
+Enable logs:
+
+az webapp log config --resource-group capeark-auth-rg --name capeark-auth-ravi-2026 --docker-container-logging filesystem
+
+Stream them
+
+az webapp log tail --resource-group capeark-auth-rg --name capeark-auth-ravi-2026
+
+6).Incase there are any modifications
+
+docker build -t capearkauthacr2026.azurecr.io/capeark-sso:v2 .
+docker push capearkauthacr2026.azurecr.io/capeark-sso:v2
+
+7). Now point the Web App to the new v2 image.
+
+az webapp config container set --resource-group capeark-auth-rg --name capeark-auth-ravi-2026 --container-image-name capearkauthacr2026.azurecr.io/capeark-sso:v2 --container-registry-url https://capearkauthacr2026.azurecr.io
+
+8). Then Restart
+
+az webapp restart --resource-group capeark-auth-rg --name capeark-auth-ravi-2026
+
+9). Watch logs
+
+az webapp log tail --resource-group capeark-auth-rg --name capeark-auth-ravi-2026
+
+10). DisallowedHost:
+     Invalid HTTP_HOST header:
+     capeark-auth-ravi-2026.azurewebsites.net
+	 
+Then modify config/settings.py
+
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "localhost",
+    "capeark-auth-ravi-2026.azurewebsites.net",
+]
+
+then
+
+docker build -t capearkauthacr2026.azurecr.io/capeark-sso:v3 .
+docker push capearkauthacr2026.azurecr.io/capeark-sso:v3
+az webapp config container set --resource-group capeark-auth-rg --name capeark-auth-ravi-2026 --container-image-name capearkauthacr2026.azurecr.io/capeark-sso:v3 --container-registry-url https://capearkauthacr2026.azurecr.io
+az webapp restart --resource-group capeark-auth-rg --name capeark-auth-ravi-2026
+https://capeark-auth-ravi-2026.azurewebsites.net
+
+11).Check for OTP in logs
+
+az webapp log tail --resource-group capeark-auth-rg --name capeark-auth-ravi-2026 | Select-String -Pattern "OTP|otp|verification|code"
+
+
+Local Development
+       │
+       ▼
+Docker Image
+       │
+       ▼
+Azure Container Registry
+       │
+       ▼
+Azure App Service
+       │
+       ▼
+Running Django Application
+       │
+       ▼
+Login → OTP → JWT → Dashboard
+
+
+Today you have:
+
+✅ Django REST API
+✅ Custom User Model
+✅ OTP Authentication
+✅ JWT Authentication
+✅ Refresh Token endpoint
+✅ Browser Frontend
+✅ Dockerized Application
+✅ Automatic Migrations
+✅ Automatic Demo User Creation
+✅ Azure Container Registry
+✅ Azure Linux App Service
+✅ Running in the Cloud
+
+User
+
+↓
+
+https://capeark-auth-ravi-2026.azurewebsites.net
+
+↓
+
+Login with Microsoft
+
+↓
+
+login.microsoftonline.com
+
+↓
+
+User enters Azure AD credentials
+
+↓
+
+Microsoft issues ID Token
+
+↓
+
+CapeArk validates it
+
+↓
+
+Creates JWT
+
+↓
+
+Dashboard

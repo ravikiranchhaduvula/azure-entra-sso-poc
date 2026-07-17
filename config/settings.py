@@ -12,10 +12,13 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+import os
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+load_dotenv(BASE_DIR / ".env")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -127,7 +130,7 @@ STATIC_URL = 'static/'
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "accounts.authentication.CookieJWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
@@ -142,3 +145,15 @@ SIMPLE_JWT = {
 STATICFILES_DIRS = [
     BASE_DIR / "frontend" / "static",
 ]
+
+# Microsoft Entra ID Configuration
+# Microsoft Entra ID Configuration
+ENTRA_CLIENT_ID = os.getenv("ENTRA_CLIENT_ID")
+ENTRA_CLIENT_SECRET = os.getenv("ENTRA_CLIENT_SECRET")
+ENTRA_TENANT_ID = os.getenv("ENTRA_TENANT_ID")
+ENTRA_REDIRECT_URI = os.getenv("ENTRA_REDIRECT_URI")
+
+DASHBOARD_URL = os.getenv(
+    "DASHBOARD_URL",
+    "http://localhost:8000/dashboard-page/"
+)

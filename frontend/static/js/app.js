@@ -93,26 +93,11 @@ async function verifyOtp() {
 
 async function loadDashboard() {
 
-    const token = sessionStorage.getItem("access");
-
-    if (!token) {
-
-        window.location = "/";
-
-        return;
-
-    }
-
-    const response = await fetch("/api/dashboard/", {
-
+	const response = await fetch("/api/dashboard/", {
+		
         method: "GET",
-
-        headers: {
-
-            Authorization: "Bearer " + token
-
-        }
-
+		
+        credentials: "same-origin"
     });
 
     const data = await response.json();
@@ -145,12 +130,15 @@ async function loadDashboard() {
     console.log(sessionStorage.getItem("access"));
 }
 
-function logout() {
+async function logout() {
+
+    await fetch("/api/logout/", {
+        method: "POST"
+    });
 
     sessionStorage.clear();
 
     window.location = "/";
-
 }
 
     if (window.location.pathname === "/dashboard-page/") {

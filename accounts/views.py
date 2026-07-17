@@ -11,6 +11,10 @@ from .models import AppUser, LoginOtp
 from .auth_tokens import generate_app_tokens
 from .serializers import RegisterSerializer, LoginSerializer, VerifyOtpSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from django.conf import settings
+import jwt
+from .auth_http import attach_auth_cookies
+from .auth_service import complete_login
 
 
 class RegisterView(APIView):
@@ -76,29 +80,23 @@ class LoginView(APIView):
 
 class VerifyOtpView(APIView):
     permission_classes = [AllowAny]
-    
+
     def post(self, request):
         serializer = VerifyOtpSerializer(data=request.data)
-
+        
         if serializer.is_valid():
             user = serializer.validated_data["user"]
             login_otp = serializer.validated_data["login_otp"]
-
+            
             login_otp.verified = True
             login_otp.save(update_fields=["verified"])
-
-            user.last_login = timezone.now()
-            print(type(user))
-            print(user.__class__)
-            print(user._meta.label)
-            user.save(update_fields=["last_login"])
-
-            tokens = generate_app_tokens(user)
-
-            return Response(
+            
+            auth = complete_login(user)
+            
+            api_response = Response(
                 {
                     "message": "Login successful.",
-                    "tokens": tokens,
+                    "tokens": auth["tokens"],
                     "user": {
                         "id": user.id,
                         "email": user.email,
@@ -108,30 +106,39 @@ class VerifyOtpView(APIView):
                 },
                 status=status.HTTP_200_OK,
             )
-
+            
+            attach_auth_cookies(api_response, auth["tokens"])
+            return api_response
+            
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
+
 class EntraStartView(APIView):
     permission_classes = [AllowAny]
-    
+
     def get(self, request):
         params = {
-            "client_id": "mock-client-id",
-            "redirect_uri": "http://127.0.0.1:8000/api/auth/entra/callback/",
+            "client_id": settings.ENTRA_CLIENT_ID,
+            "redirect_uri": settings.ENTRA_REDIRECT_URI,
             "response_type": "code",
+            "response_mode": "query",
             "scope": "openid profile email",
             "state": "mock-state-123",
         }
 
-        authorize_url = "http://127.0.0.1:9000/authorize?" + urlencode(params)
-
+        authorize_url = (
+            f"https://login.microsoftonline.com/"
+            f"{settings.ENTRA_TENANT_ID}"
+            f"/oauth2/v2.0/authorize?"
+            + urlencode(params)
+        )
+        print("##############", authorize_url)
         return redirect(authorize_url)
         
 class EntraCallbackView(APIView):
     permission_classes = [AllowAny]
     
     def get(self, request):
-
         code = request.GET.get("code")
 
         if not code:
@@ -141,21 +148,34 @@ class EntraCallbackView(APIView):
             )
 
         token_response = requests.post(
-            "http://127.0.0.1:9000/token",
+            f"https://login.microsoftonline.com/{settings.ENTRA_TENANT_ID}/oauth2/v2.0/token",
             data={
-                "code": code
+                "client_id": settings.ENTRA_CLIENT_ID,
+                "client_secret": settings.ENTRA_CLIENT_SECRET,
+                "grant_type": "authorization_code",
+                "code": code,
+                "redirect_uri": settings.ENTRA_REDIRECT_URI,
+                "scope": "openid profile email",
             },
-            timeout=5,
+            timeout=10,
         )
 
+        token_response.raise_for_status()
+        
         token_data = token_response.json()
 
         id_token = token_data["id_token"]
+        
+        claims = jwt.decode(
+            id_token,
+            options={"verify_signature": False},
+            algorithms=["RS256"],
+        )
 
-        email = id_token["email"]
-        name = id_token["name"]
-        oid = id_token["oid"]
-        tid = id_token["tid"]
+        email = claims.get("preferred_username") or claims.get("email")
+        name = claims.get("name")
+        oid = claims.get("oid")
+        tid = claims.get("tid")
 
 
         user, created = AppUser.objects.get_or_create(
@@ -175,95 +195,22 @@ class EntraCallbackView(APIView):
             user.auth_provider = AppUser.AUTH_PROVIDER_ENTRA
             user.entra_object_id = oid
             user.entra_tenant_id = tid
-            user.last_login = timezone.now()
             user.save(
                 update_fields=[
                     "first_name",
                     "auth_provider",
                     "entra_object_id",
                     "entra_tenant_id",
-                    "last_login",
                 ]
             )
 
-        tokens = generate_app_tokens(user)
+        auth = complete_login(user)
         
-        html = f"""
-<!DOCTYPE html>
-<html>
-
-<head>
-    <title>CapeArk</title>
-
-    <style>
-
-        body {{
-            font-family: Arial;
-            background:#f5f5f5;
-            display:flex;
-            justify-content:center;
-            align-items:center;
-            height:100vh;
-        }}
-
-        .card {{
-            background:white;
-            width:500px;
-            padding:40px;
-            border-radius:10px;
-            box-shadow:0 2px 10px rgba(0,0,0,.15);
-            text-align:center;
-        }}
-
-        button {{
-            background:#0078D4;
-            color:white;
-            border:none;
-            padding:12px 24px;
-            border-radius:5px;
-            cursor:pointer;
-            font-size:16px;
-        }}
-
-    </style>
-
-</head>
-
-<body>
-
-<div class="card">
-
-<h2>Authentication Successful</h2>
-
-<p>
-Welcome <strong>{user.name}</strong>
-</p>
-
-<p>
-Authentication Provider:
-<strong>{user.auth_provider}</strong>
-</p>
-
-<p>
-JWT tokens have been generated successfully.
-</p>
-
-<button onclick="window.location='/api/dashboard/'">
-
-Open Dashboard
-
-</button>
-
-</div>
-
-</body>
-
-</html>
-"""
-
-        return HttpResponse(html)
-
+        response = redirect(settings.DASHBOARD_URL)
         
+        attach_auth_cookies(response, auth["tokens"])
+        
+        return response
         
 class DashboardView(APIView):
     permission_classes = [IsAuthenticated]
@@ -282,3 +229,17 @@ class DashboardView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+        
+class LogoutView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        response = Response(
+            {"message": "Logged out successfully."},
+            status=200,
+        )
+
+        response.delete_cookie("capeark_access")
+        response.delete_cookie("capeark_refresh")
+
+        return response
