@@ -67,7 +67,7 @@ class MockEntraHandler(BaseHTTPRequestHandler):
                     </p>
 
                     <button
-                        onclick="window.location='http://127.0.0.1:8000/api/auth/entra/start/'">
+                        onclick="window.location='http://localhost:8000/api/auth/entra/start/'">
 
                         Login to CapeArk
 
@@ -106,7 +106,7 @@ class MockEntraHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         parsed_url = urlparse(self.path)
 
-        if parsed_url.path == "/token":
+        if parsed_url.path == "/auth/token":
             response = {
                 "id_token": {
                     "email": "azureuser@example.com",

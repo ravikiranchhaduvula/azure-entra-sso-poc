@@ -11,16 +11,16 @@ def attach_auth_cookies(response, tokens):
         "capeark_access",
         tokens["access"],
         httponly=True,
-        secure=not settings.DEBUG,
-        samesite="Lax",
+        secure=True,
+        samesite="None",
     )
 
     response.set_cookie(
         "capeark_refresh",
         tokens["refresh"],
         httponly=True,
-        secure=not settings.DEBUG,
-        samesite="Lax",
+        secure=True,
+        samesite="None",
     )
 
     return response

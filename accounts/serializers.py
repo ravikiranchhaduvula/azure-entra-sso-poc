@@ -115,3 +115,6 @@ class VerifyOtpSerializer(serializers.Serializer):
         data["login_otp"] = login_otp
 
         return data
+        
+class AuthorizationCodeExchangeSerializer(serializers.Serializer):
+    code = serializers.CharField()

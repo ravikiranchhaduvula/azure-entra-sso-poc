@@ -39,9 +39,36 @@ ALLOWED_HOSTS = os.getenv(
     "127.0.0.1,localhost"
 ).split(",")
 
+# =========================
+# Return URL Security
+# =========================
+
+ALLOWED_RETURN_URLS = [
+    url.strip()
+    for url in os.getenv(
+        "ALLOWED_RETURN_URLS",
+        "http://localhost:3000",
+    ).split(",")
+    if url.strip()
+]
+
+# =========================
+# CORS Configuration
+# =========================
+
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ALLOWED_ORIGINS",
+        "http://localhost:3000",
+    ).split(",")
+    if origin.strip()
+]
+
 # Application definition
 
 INSTALLED_APPS = [
+    "corsheaders",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -56,6 +83,7 @@ INSTALLED_APPS = [
 AUTH_USER_MODEL = "accounts.AppUser"
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -155,7 +183,7 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=1),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
 
@@ -171,3 +199,34 @@ DASHBOARD_URL = os.getenv(
     "DASHBOARD_URL",
     "http://localhost:8000/dashboard-page/"
 )
+
+CORS_ALLOW_CREDENTIALS = True
+
+ACCESS_COOKIE_NAME = "capeark_access"
+
+REFRESH_COOKIE_NAME = "capeark_refresh"
+
+# =========================
+# Azure Reverse Proxy
+# =========================
+
+# Azure App Service terminates HTTPS before forwarding to Django.
+SECURE_PROXY_SSL_HEADER = (
+    "HTTP_X_FORWARDED_PROTO",
+    "https",
+)
+
+SECURE_SSL_REDIRECT = not DEBUG
+
+# =========================
+# Django Secure Cookies
+# =========================
+
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+
+SESSION_COOKIE_HTTPONLY = True
+
+SESSION_COOKIE_SAMESITE = "Lax"
+
+CSRF_COOKIE_SAMESITE = "Lax"

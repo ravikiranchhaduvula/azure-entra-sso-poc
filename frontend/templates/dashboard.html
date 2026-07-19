@@ -1,11 +1,16 @@
 {% load static %}
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
 
-    <title>Dashboard</title>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>CapeArk Administration Portal</title>
 
     <link rel="stylesheet"
           href="{% static 'css/styles.css' %}">
@@ -16,20 +21,26 @@
 
 <div class="login-card">
 
-    <h2>Dashboard</h2>
+    <h1>CapeArk</h1>
+
+    <h2>Migration Dashboard</h2>
+
+    <p>
+        Welcome to the CapeArk Migration Dashboard.
+    </p>
+
+    <p>
+        Authenticated using CapeArk credentials.
+    </p>
+
+    <hr>
 
     <div id="userInfo">
-
         Loading...
-
     </div>
 
-    <br>
-
     <button onclick="logout()">
-
         Logout
-
     </button>
 
 </div>

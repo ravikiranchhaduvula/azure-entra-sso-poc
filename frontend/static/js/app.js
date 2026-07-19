@@ -4,7 +4,7 @@ async function login() {
 
     const password = document.getElementById("password").value;
 
-    const response = await fetch("/api/login/", {
+    const response = await fetch("api/auth/login/", {
 
         method: "POST",
 
@@ -47,7 +47,7 @@ async function verifyOtp() {
         document.getElementById("otp").value;
 
     const response =
-        await fetch("/api/verify-otp/", {
+        await fetch("/api/auth/verify-otp/", {
 
             method: "POST",
 
@@ -93,7 +93,7 @@ async function verifyOtp() {
 
 async function loadDashboard() {
 
-	const response = await fetch("/api/dashboard/", {
+	const response = await fetch("/api/auth/dashboard/", {
 		
         method: "GET",
 		
@@ -116,15 +116,17 @@ async function loadDashboard() {
 
     document.getElementById("userInfo").innerHTML = `
 
-    <h3>Welcome ${data.user.name}</h3>
+<h3>🎉 Welcome ${data.user.name}</h3>
 
-    <p><strong>Email:</strong> ${data.user.email}</p>
+<h4>Email</h4>
 
-    <p><strong>Username:</strong> ${data.user.username}</p>
+<p>${data.user.email}</p>
 
-    <p><strong>Provider:</strong> ${data.user.auth_provider}</p>
+<h4>Provider</h4>
 
-    `;
+<p>${data.user.auth_provider}</p>
+
+`;
 	
 	console.log("Access Token:");
     console.log(sessionStorage.getItem("access"));
@@ -132,13 +134,19 @@ async function loadDashboard() {
 
 async function logout() {
 
-    await fetch("/api/logout/", {
-        method: "POST"
-    });
+    try {
 
-    sessionStorage.clear();
+        await fetch("/api/auth/logout/", {
+            method: "POST",
+            credentials: "include"
+        });
 
-    window.location = "/";
+    } finally {
+
+        sessionStorage.clear();
+
+        window.location = "/";
+    }
 }
 
     if (window.location.pathname === "/dashboard-page/") {

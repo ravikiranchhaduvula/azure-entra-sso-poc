@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import AppUser, LoginOtp
+from .models import AppUser, LoginOtp, AuthorizationCode
 
 
 @admin.register(AppUser)
@@ -58,5 +58,19 @@ class LoginOtpAdmin(admin.ModelAdmin):
     )
 
     search_fields = (
+        "user__email",
+    )
+    
+@admin.register(AuthorizationCode)
+class AuthorizationCodeAdmin(admin.ModelAdmin):
+    list_display = (
+        "code",
+        "user",
+        "used",
+        "expires_at",
+    )
+
+    search_fields = (
+        "code",
         "user__email",
     )

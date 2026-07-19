@@ -1,4 +1,5 @@
 import random
+import secrets
 from datetime import timedelta
 
 from django.contrib.auth.models import AbstractUser
@@ -87,3 +88,26 @@ class LoginOtp(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.otp}"
+        
+class AuthorizationCode(models.Model):
+    code = models.CharField(max_length=64, unique=True)
+    user = models.ForeignKey(
+        AppUser,
+        on_delete=models.CASCADE,
+        related_name="authorization_codes",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.user.email} - {self.code}"
+        
+    @classmethod
+    def create_for_user(cls, user):
+        return cls.objects.create(
+            user=user,
+            code=secrets.token_urlsafe(32),
+            expires_at=timezone.now() + timedelta(minutes=1),
+    )

@@ -66,20 +66,20 @@ JWT tokens are only created after both authentication factors succeed.
 
 ## APIs
 
-### POST /api/login/
+### POST api/auth/login/
 
 Authenticates email and password, generates an OTP and stores it.
 
-### POST /api/verify-otp/
+### POST /api/auth/verify-otp/
 
 Validates the OTP, marks it verified, updates last_login and returns JWT
 Access and Refresh Tokens.
 
-### GET /api/dashboard/
+### GET /api/auth/dashboard/
 
 Protected endpoint that requires a valid Access Token.
 
-### POST /api/token/refresh/
+### POST /api/auth/token/refresh/
 
 Uses a valid Refresh Token to issue a new Access Token.
 

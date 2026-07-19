@@ -37,11 +37,11 @@ SQLite Database
 
 ## REST APIs
 
--   POST `/register/`
--   POST `/login/`
--   POST `/verify-otp/`
--   GET `/dashboard/`
--   POST `/token/refresh/`
+-   POST `api/auth/register/`
+-   POST `api/auth/login/`
+-   POST `api/auth/verify-otp/`
+-   GET `api/auth/dashboard/`
+-   POST `api/auth/token/refresh/`
 
 ## Authentication Flow
 
@@ -56,7 +56,7 @@ Generate OTP
   ↓
 OTP Page
   ↓
-POST /verify-otp/
+POST api/auth/verify-otp/
   ↓
 JWT Tokens
   ↓
@@ -64,7 +64,7 @@ Store in sessionStorage
   ↓
 Dashboard
   ↓
-GET /dashboard/
+GET api/auth/dashboard/
 ```
 
 ## Frontend Structure
@@ -98,7 +98,7 @@ sessionStorage.setItem(...)
 
 Uses the stored Access Token to call:
 
-`GET /dashboard/`
+`GET /api/auth/dashboard/`
 
 Header:
 
