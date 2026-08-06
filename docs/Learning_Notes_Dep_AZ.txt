@@ -1,4 +1,4 @@
-PS C:\capeark-sso-local> .venv\Scripts\Activate.ps1
+PS C:\capeark-sso-local> .\venv\Scripts\activate.bat
 
 (.venv) PS C:\capeark-sso-local> python -m pip freeze
 asgiref==3.11.1
